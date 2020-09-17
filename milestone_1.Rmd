@@ -1,0 +1,9 @@
+---
+title: "Milestone 1"
+author: "Derek Chang"
+date: "9/17/2020"
+output: html_document
+---
+
+I am most interested in exploring economic development and sports analytics. For the former, I would like to look 
+at the prevalence of monopolies in countries and their economic development over the past few decades. I would get the data from the [IMF](https://www.imf.org/en/Data#global) or the [World Bank](https://data.worldbank.org/). For the latter, I would look at [Sports Reference](https://www.sports-reference.com/).
