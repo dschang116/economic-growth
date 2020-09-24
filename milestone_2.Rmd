@@ -4,6 +4,7 @@ author: "Derek Chang"
 date: "9/24/2020"
 output: html_document
 ---
+[Repo for Final Project](https://github.com/dschang116/Final-Project/tree/master)
 
 [The Language of Emojis](https://linda-qin.shinyapps.io/gov1005-emojis/) has an
 impressive original data collection process, gathering its data in emojis, which 
