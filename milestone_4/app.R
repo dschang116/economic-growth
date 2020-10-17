@@ -11,7 +11,7 @@ library(shiny)
 library(tidyverse)
 library(readxl)
 
-imf_rGDP_growth <- read_excel("~/Desktop/Gov-50/Final-Project/rGDP-Growth-Data/imf-dm-export-20201014.xls") %>%
+imf_rGDP_growth <- read_excel("raw_data/imf-dm-export-20201014.xls") %>%
     drop_na()
 
 imf_rGDP_growth[imf_rGDP_growth == "no data"] <- NA
@@ -28,7 +28,7 @@ ui <- navbarPage(
              fluidPage(
                  
                  # Application title
-                 titlePanel("IMF rGDP Growth Data in 1980"),
+                 titlePanel("IMF Real GDP Growth Data in 1980"),
                  
                  # Sidebar with a slider input for number of bins 
                  sidebarLayout(
@@ -53,7 +53,11 @@ ui <- navbarPage(
     tabPanel("About", 
              titlePanel("About"),
              h3("Project Background and Motivations"),
-             p("Hello, this is where I talk about my project."),
+             p("Hello, this is where I talk about my project. I have begun to
+               clean the real GDP growth data from the IMF. I have also found
+               a second dataset from the World Bank which includes data on 
+               HH market concentration index. I have created a histogram of
+               growth rates for countries in 1980."),
              h3("About Me"),
              p("My name is Derek Chang, and I am a first-year undergraduate at 
              Harvard University studying Economics.
