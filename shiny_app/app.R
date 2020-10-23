@@ -29,7 +29,7 @@ imf_rGDP_growth[imf_rGDP_growth == "no data"] <- NA
 imf_rGDP_growth$country[imf_rGDP_growth$country == 
                             "China, People's Republic of"] <- "China"
 imf_rGDP_growth$country[imf_rGDP_growth$country == 
-                            "Korea, Republic of"] <- "Korea"
+                            "Korea, Republic of"] <- "South Korea"
 
 # Filter to G20 countries and order alphabetically. 
 # Change first column country as factor and rest as numeric column type. 
@@ -37,7 +37,7 @@ imf_rGDP_growth$country[imf_rGDP_growth$country ==
 G20_countries <- c("Argentina", "Australia", "Brazil", "Canada", 
                    "China", "France", 
                    "Germany", "India", "Indonesia", "Italy", "Japan", 
-                   "Korea", "Mexico", "Russian Federation", 
+                   "South Korea", "Mexico", "Russian Federation", 
                    "Saudi Arabia", "South Africa", "Turkey", 
                    "United Kingdom", "United States", "European Union",
                    "Austria", "Belgium", "Bulgaria",  "Croatia",  
@@ -122,7 +122,7 @@ ui <- navbarPage(
                HH market concentration index. I have created a histogram of
                growth rates for countries in 1980. This project's GitHub 
                repository lives here: 
-               https://github.com/dschang116/Final-Project."),
+               https://github.com/dschang116/Final-Project.") ,
              h3("About Me"),
              p("My name is Derek Chang, and I am a first-year undergraduate at 
              Harvard University studying Economics.
@@ -175,7 +175,7 @@ server <- function(input, output) {
             labs (x = "Year", y = "GDP Growth %", color = "Country", 
                   title = paste("GDP Growth for", 
                                 paste(countrySelected, collapse = ', '), 
-                                "through years")) +
+                                "Through Years")) +
             theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
         
     })
