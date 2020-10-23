@@ -10,6 +10,7 @@
 library(shiny)
 library(tidyverse)
 library(readxl)
+library(ggplot2)
 
 # Load in IMF rGDP data.
 # Drop NA values.
@@ -23,8 +24,16 @@ imf_rGDP_growth[imf_rGDP_growth == "no data"] <- NA
 
 # Rename first column to country and change column types 
 
-imf_rGDP_growth <- imf_rGDP_growth %>% 
+# https://www.gov.uk/eu-eea
+
+G20_rGDP_growth <- imf_rGDP_growth %>% 
     rename("country" = "Real GDP growth (Annual percent change)") %>% 
+    filter(country %in% c("Argentina", "Australia", "Brazil", "Canada", 
+                          "China, People's Republic of", "France", 
+                          "Germany", "India", "Indonesia", "Italy", "Japan", 
+                          "Korea, Republic of", "Mexico", "Russian Federation", 
+                          "Saudi Arabia", "South Africa", "Turkey", 
+                          "United Kingdom", "United States", "European Union")) %>% 
     mutate_at(1, as.factor) %>%
     mutate_at(2:46, as.numeric)
 
@@ -53,6 +62,28 @@ ui <- navbarPage(
                      )
                  )
              )),
+    tabPanel("Graph",
+             fluidPage(
+                 
+                 # Application title
+                 titlePanel("Checkboxes"),
+                 
+                 # Sidebar with a slider input for number of bins 
+                 sidebarLayout(
+                     sidebarPanel(
+                         checkboxGroupInput("checkGroup", 
+                                            h3("Checkbox group"), 
+                                            choices = list("Colombia" = "col", 
+                                                           "Japan" = "jpn", 
+                                                           "Germany" = "germ"),
+                                            selected = 1)),
+                     
+                     # Show a plot of the generated distribution
+                     mainPanel(
+                         plotOutput("checkPlot")
+                     )
+                 )
+             )),
     tabPanel("Discussion",
              titlePanel("Discussion Title"),
              p("Tour of the modeling choices you made and 
@@ -77,14 +108,15 @@ server <- function(input, output) {
 
     output$distPlot <- renderPlot({
         # generate bins based on input$bins from ui.R
-        x    <- imf_rGDP_growth[[2]]
+        x    <- G20_rGDP_growth[[2]]
         
         bins <- seq(min(x, na.rm = TRUE), max(x, na.rm = TRUE), 
                     length.out = input$bins + 1)
 
         # draw the histogram with the specified number of bins
         hist(x, breaks = bins, col = 'darkgray', border = 'white')
-    })
+    }) 
+    output$checkPlot <- renderPlot({print(input$checkGroup)})
 }
 
 # Run the application 
