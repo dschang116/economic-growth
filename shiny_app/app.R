@@ -11,6 +11,7 @@ library(shiny)
 library(tidyverse)
 library(readxl)
 library(ggplot2)
+library(lubridate)
 
 # Load in IMF rGDP data. Rename first column to country 
 # Drop NA values.
@@ -18,7 +19,7 @@ library(ggplot2)
 imf_rGDP_growth <- read_excel("raw_data/imf-dm-export-20201014.xls") %>%
     rename(country = "Real GDP growth (Annual percent change)") %>%
     drop_na()
-
+    
 # Replace values of no data with NA.
 
 imf_rGDP_growth[imf_rGDP_growth == "no data"] <- NA
