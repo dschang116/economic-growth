@@ -16,82 +16,43 @@ library(lubridate)
 # Load in IMF rGDP data. Rename first column to country 
 # Drop NA values.
 
-imf_rGDP_growth <- read_excel("raw_data/imf-dm-export-20201014.xls") %>%
+imf_ten_econ <- read_excel("raw_data/imf-dm-export-20201014.xls") %>%
     rename(country = "Real GDP growth (Annual percent change)") %>%
     drop_na()
-    
+
 # Replace values of no data with NA.
 
-imf_rGDP_growth[imf_rGDP_growth == "no data"] <- NA
+imf_ten_econ[imf_ten_econ == "no data"] <- NA
 
+# Rename China.
 
-# Rename China and South Korea.
-
-imf_rGDP_growth$country[imf_rGDP_growth$country == 
+imf_ten_econ$country[imf_ten_econ$country == 
                             "China, People's Republic of"] <- "China"
-imf_rGDP_growth$country[imf_rGDP_growth$country == 
-                            "Korea, Republic of"] <- "South Korea"
 
 # Filter to G20 countries and order alphabetically. 
 # Change first column country as factor and rest as numeric column type. 
 
-G20_countries <- c("Argentina", "Australia", "Brazil", "Canada", 
-                   "China", "France", 
-                   "Germany", "India", "Indonesia", "Italy", "Japan", 
-                   "South Korea", "Mexico", "Russian Federation", 
-                   "Saudi Arabia", "South Africa", "Turkey", 
-                   "United Kingdom", "United States", "European Union",
-                   "Austria", "Belgium", "Bulgaria",  "Croatia",  
-                   "Republic of Cyprus", "Czech Republic", "Denmark", 
-                   "Estonia", "Finland", "Greece", 
-                   "Hungary", "Ireland", "Latvia", "Lithuania", 
-                   "Luxembourg", "Malta", "Netherlands", "Poland", 
-                   "Portugal", "Romania", "Slovakia", "Slovenia", 
-                   "Spain", "Sweden") %>%
+countries <- c("Brazil", "Canada", "China", "France", 
+                   "Germany", "India", "Italy", "Japan", 
+                   "United Kingdom", "United States") %>%
     sort()
 
-G20_rGDP_growth <- imf_rGDP_growth %>% 
-    filter(country %in% G20_countries) %>% 
+ten_econ <- imf_ten_econ %>% 
+    filter(country %in% countries) %>% 
     mutate_at(1, as.factor) %>%
     mutate_at(2:47, as.numeric) %>% 
-    select(1:41)
+    select(c(1:1, 22:42))
+
+
 
 # Define UI for application that draws a histogram
 ui <- navbarPage(
-    "Factors of Economic Growth",
-    tabPanel("Distribution by Year",
+    "Economic Growth in the Twenty-First Century: A Look Back, and a Look Forward",
+    tabPanel("A Closer Look at the U.S.",
              fluidPage(
                  
                  # Application title
-                 titlePanel("Real GDP Growth Distribution by Year"),
-                 
-                 selectInput("year", "Choose a year:",
-                             list(`Year` = c(seq(1980,2019)))
-                 ),
-                 
-                 # Sidebar with a slider input for number of bins 
-                 sidebarLayout(
-                     sidebarPanel(
-                         sliderInput("bins",
-                                     "Number of bins:",
-                                     min = 1,
-                                     max = 20,
-                                     value = 10)
-                     ),
-                     
-                     
-                     
-                     # Show a plot of the generated distribution
-                     mainPanel(plotOutput("GDPDistributionByYear"))
-                 )
-                 
-             )),
-    tabPanel("Real GDP Growth by Country",
-             fluidPage(
-                 
-                 # Application title
-                 titlePanel("G20 Countries and European Union"),
-                 
+                 titlePanel("Growth of theWorld's Ten Largest Economies"),
                  
                  # Sidebar with a slider input for number of bins 
                  sidebarLayout(
@@ -99,9 +60,9 @@ ui <- navbarPage(
                          checkboxGroupInput("country", 
                                             ("Pick a country:"), 
                                             choiceNames =
-                                                G20_countries,
+                                                countries,
                                             choiceValues =
-                                                G20_countries,
+                                                countries,
                                             selected = "United States"
                          )),
                      
@@ -150,7 +111,7 @@ server <- function(input, output) {
     
     output$GDPDistributionByYear <- renderPlot({
         year <- as.numeric(input$year)
-        plotData <- G20_rGDP_growth[[year - 1980 + 2]]
+        plotData <- ten_econ[[year - 1980 + 2]]
         
         bins <- seq(min(plotData, na.rm = TRUE), max(plotData, na.rm = TRUE), 
                     length.out = input$bins + 1)
@@ -165,7 +126,7 @@ server <- function(input, output) {
     output$GDPByCountry = renderPlot({
         countrySelected <- input$country
         
-        plotData <- G20_rGDP_growth %>% filter(country %in% countrySelected) %>%
+        plotData <- ten_econ %>% filter(country %in% countrySelected) %>%
             pivot_longer(cols = - country,
                          names_to = "year", 
                          values_to = "gdp")
@@ -176,7 +137,7 @@ server <- function(input, output) {
             labs (x = "Year", y = "GDP Growth %", color = "Country", 
                   title = paste("GDP Growth for", 
                                 paste(countrySelected, collapse = ', '), 
-                                "Through Years")) +
+                                "in Twenty-First Century")) +
             theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
         
     })
