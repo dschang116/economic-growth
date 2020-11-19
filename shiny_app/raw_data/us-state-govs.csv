@@ -1,0 +1,52 @@
+StateName,StateAbbr,DemGov
+Alabama,AL,0
+Alaska,AK,0
+Arizona,AZ,0
+Arkansas,AR,0
+California,CA,1
+Colorado,CO,1
+Connecticut,CT,1
+Delaware,DE,1
+District of Columbia,DC,0
+Florida,FL,0
+Georgia,GA,0
+Hawaii,HI,1
+Idaho,ID,0
+Illinois,IL,1
+Indiana,IN,0
+Iowa,IA,0
+Kansas,KS,1
+Kentucky,KY,1
+Louisiana,LA,1
+Maine,ME,1
+Maryland,MD,0
+Massachusetts,MA,0
+Michigan,MI,1
+Minnesota,MN,1
+Mississippi,MS,0
+Missouri,MO,0
+Montana,MT,1
+Nebraska,NE,0
+Nevada,NV,1
+New Hampshire,NH,0
+New Jersey,NJ,1
+New Mexico,NM,1
+New York,NY,1
+North Carolina,NC,1
+North Dakota,ND,0
+Ohio,OH,0
+Oklahoma,OK,0
+Oregon,OR,1
+Pennsylvania,PA,1
+Rhode Island,RI,1
+South Carolina,SC,0
+South Dakota,SD,0
+Tennessee,TN,0
+Texas,TX,0
+Utah,UT,0
+Vermont,VT,0
+Virginia,VA,1
+Washington,WA,1
+West Virginia,WV,0
+Wisconsin,WI,1
+Wyoming,WY,0
