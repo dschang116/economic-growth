@@ -50,85 +50,82 @@ shinyUI(
       
       # Generate a 2x2 column/row layout.
       fluidPage(
-        fluidRow(style = 'padding:30px;',
-                 column(7,
-                        
-                        # Plot histogram of water conflict events over time.
-                        
-                        sidebarLayout(
-                          sidebarPanel(
-                            checkboxGroupInput("country", 
-                                               ("Pick a country:"), 
-                                               choiceNames =
-                                                 countries,
-                                               choiceValues =
-                                                 countries,
-                                               selected = "United States"
-                            )),
-                          
-                          # Show a plot of the generated distribution
-                          mainPanel(plotOutput("ten_econ_plot")),
-                          
-                        )),
-                 column(
-                   2,
-                   h3("U.S. and the World"),
-                   p(
-                     "Being the world's largest economy has given America a prominent role in 
-                     the global economy. Evaluating GDP growth, an important sign of the overall 
-                     health and direction of a nation's economy, can help contexualize this position.
-                     As the graph on the left shows, the growth of advanced economies (those 
-                     other than Brazil, China, and India) seem strongly correlated with the U.S.'s,
-                     even similar in magnitude over this time period. Although the growth of the
-                     developing economies (Brazil, China, India) do not align as closely with US's
-                     as the advanced economies, there is still a noticeable relation. 
-                     Furthering our understanding of the U.S. economy is essential to ensure the 
-                     proper policies are implemenented to boost American proseprity, and in turn,
-                     the world's."
-                   )
-                 )),
-        fluidRow(column(
-          2,
-          h3("X."),
-          p(
-            "As can be seen from the graph on the right, there has been a great amount of 
-            variabiliy in different economic measures and policy actions. Overall, many
-            indicators of growth are upward trending, a sign that government and regulatory
-            actions have, at the very least, not had a hindering impact. In this timeframe, the
-            economic system of the U.S has generally proven to be successful, thoough
-            it has its shortcomings."
-          )
-        ),
-        
-        column(8,
+       
+        fluidRow(
+          column(8,
                
                # Plot Leaflet map.
                
                # Sidebar with a slider input for number of bins 
                sidebarLayout(
                  sidebarPanel(
-                   selectInput("trend", "Pick a trend", 
-                               choices = list("Real GDP per Capita" = 1, 
-                                              "Real GDP per Capita Growth (Yearly)" = 2,
-                                              "Corporate Profits After Tax" = 3,
-                                              "S&P 500 Index" = 4,
-                                              "Patents Granted" = 5,
-                                              "Mergers and Acquistions" = 6,
-                                              "Trade Balance" = 7), 
-                               selected = 1)),
-                 # radioButtons("trend", 
-                 #              ("Pick a trend:"), 
-                 #              choiceNames =
-                 #                trends,
-                 #              choiceValues =
-                 #                trends,
-                 #              selected = "Real GDP per Capita"
-                 #)),
+                   selectInput("trend", "Pick a measure:", 
+                               choices = list("Real GDP per Capita", 
+                                              "Real GDP per Capita Growth (Yearly)",
+                                              "Corporate Profits After Tax",
+                                              "S&P 500 Index",
+                                              "Patents Granted",
+                                              "Mergers and Acquistions",
+                                              "Trade Balance"))
+                   ),
                  
                  # Show a plot of the generated distribution
                  mainPanel(plotOutput("us_trends")),
                  
-               ))
+               )),
+          
+          column(
+            4,
+            h3("Variabiliy in Different Economic Measures and Policy Actions"),
+            p(
+              "As can be seen from the graph on the right, there has been a great amount of 
+            variabiliy in different economic measures and policy actions. Overall, many
+            indicators of growth are upward trending, a sign that government and regulatory
+            actions have, at the very least, not had a hindering impact. In this timeframe, the
+            economic system of the U.S has generally proven to be successful, thoough
+            it has its shortcomings."
+            )
+          )
+        ),
+            
+        fluidRow(style = 'margin-top:5em',
+            column(
+              4,
+              h3("U.S. and the World"),
+              p(
+                "Being the world's largest economy has given America a prominent role in 
+                       the global economy. Evaluating GDP growth, an important sign of the overall 
+                       health and direction of a nation's economy, can help contexualize this position.
+                       As the graph on the left shows, the growth of advanced economies (those 
+                       other than Brazil, China, and India) seem strongly correlated with the U.S.'s,
+                       even similar in magnitude over this time period. Although the growth of the
+                       developing economies (Brazil, China, India) do not align as closely with US's
+                       as the advanced economies, there is still a noticeable relation. 
+                       Furthering our understanding of the U.S. economy is essential to ensure the 
+                       proper policies are implemenented to boost American proseprity, and in turn,
+                       the world's."
+              )
+            ),
+        
+             column(8,
+                    
+                    # Plot histogram of water conflict events over time.
+                    
+                    sidebarLayout(
+                      sidebarPanel(
+                        checkboxGroupInput("country", 
+                                           ("Pick a country:"), 
+                                           choiceNames =
+                                             countries,
+                                           choiceValues =
+                                             countries,
+                                           selected = c("United States", "United Kingdom")
+                        )),
+                      
+                      # Show a plot of the generated distribution
+                      mainPanel(plotOutput("ten_econ_plot")),
+                      
+                    ))
         )
       )),
     

@@ -34,25 +34,32 @@ server <- function(input, output) {
             title = paste("GDP Growth for", 
                           paste(countrySelected, collapse = ', '), 
                           "in Twenty-First Century")) +
-      theme_bw() +
-      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+      scale_x_discrete(breaks = seq(1980, 2020, 5)) + 
+      theme_bw() 
+      # theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
   })
   
   output$us_trends = renderPlot({
     trendSelected <- input$trend
     
     trendCol <- case_when(
-      trendSelected == 1 ~ us_yr$rgdp_cap,
-      trendSelected == 2 ~ us_yr$rgdp_cap_gr,
-      trendSelected == 3 ~ us_yr$profits,
-      trendSelected == 4 ~ us_yr$close,
-      trendSelected == 5 ~ us_yr$tot_patents,
-      trendSelected == 6 ~ us_yr$value_m_a,
-      trendSelected == 7 ~ us_yr$trade_deficit_perc
+      trendSelected == "Real GDP per Capita" ~ us_yr$rgdp_cap,
+      trendSelected == "Real GDP per Capita Growth (Yearly)" ~ us_yr$rgdp_cap_gr,
+      trendSelected == "Corporate Profits After Tax" ~ us_yr$profits,
+      trendSelected == "S&P 500 Index" ~ us_yr$close,
+      trendSelected == "Patents Granted" ~ us_yr$tot_patents,
+      trendSelected == "Mergers and Acquistions" ~ us_yr$value_m_a,
+      trendSelected == "Trade Balance" ~ us_yr$trade_deficit_perc
     )
     
+    
     ggplot(data = us_yr, aes(x = obs_date, y = trendCol)) +
-      geom_line()
+      geom_line(size = 1) +
+      labs(y = trendSelected,
+           x = "Year",
+           title = "U.S. Growth Over Years") +
+      scale_y_continuous(labels = scales::number_format()) +
+      theme_bw()
   })
   
   output$covid_us_map = renderPlot({
@@ -83,13 +90,19 @@ server <- function(input, output) {
                    color = "red") + 
       coord_fixed(1.5) +
       scale_fill_gradient(low = "white", high = "black", label = scales::comma) +
-      labs(fill = metricSelected) +
+      theme_bw() +
+      labs(title = metricSelected) +
       theme(axis.title.x = element_blank(),
             axis.text.x = element_blank(),
             axis.ticks.x = element_blank(),
             axis.title.y = element_blank(),
             axis.text.y = element_blank(),
-            axis.ticks.y = element_blank())
+            axis.ticks.y = element_blank(),
+            legend.title = element_blank(),
+            legend.background = element_rect(fill="gray",
+                                             size=0.5, linetype="solid", 
+                                             color ="darkblue"))
+    
     
   })
 }
