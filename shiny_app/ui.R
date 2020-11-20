@@ -25,6 +25,10 @@ metrics <- c("First-Time Unemployment Claims", "Average Percent Unemployed (July
 
 trends <- c("Real GDP per Capita", "Real GDP per Capita Growth (Yearly)")
 
+# Define methods.
+
+methods <- c("Linear Model", "Loess Model")
+
 shinyUI(
   navbarPage(
     theme = shinytheme("cerulean"),
@@ -34,7 +38,7 @@ shinyUI(
     
     tabPanel(
       "A Snapshot",
-      h2("U.S. Economic Trends Over the Last Three Decades"),
+      h2("Economic Trends Over the Last Three Decades"),
       p(
         "The economy is one of the foundation of American society, an indicator of the nation's
         prosperity and wealth. It touches every aspect of our lives, and economic policies can 
@@ -54,9 +58,9 @@ shinyUI(
         fluidRow(
           column(8,
                
-               # Plot Leaflet map.
+               # Plot .
                
-               # Sidebar with a slider input for number of bins 
+               # . 
                sidebarLayout(
                  sidebarPanel(
                    selectInput("trend", "Pick a measure:", 
@@ -69,10 +73,13 @@ shinyUI(
                                               "Trade Balance"))
                    ),
                  
-                 # Show a plot of the generated distribution
-                 mainPanel(plotOutput("us_trends")),
-                 
-               )),
+                 # .
+                 mainPanel(
+                   plotOutput("us_trends"),
+                   
+                   )
+               )
+             ),
           
           column(
             4,
@@ -127,19 +134,61 @@ shinyUI(
                       
                     ))
         )
-      )),
+      )
+    ),
     
     ############################
     
     ############## SECOND TAB ##############
     
     tabPanel(
-      "Growth Trend",
-      h2("U.S. Economy Growth Trend"),
+      "Analyzing Economic Trends",
+      h2("Finding Connections"),
       p(
         "This is to take a look U.S. economy growth trend. Have a model to do analysis"
-      )
-    ),
+      ),
+      
+      sidebarLayout(
+        sidebarPanel(
+          h4("Construct the Model:"),
+          
+          # Select X variable(s) for model.
+          
+          selectInput(
+            "x_var",
+            "X Variable:",
+            choices = c(
+              "Trade Deficit" = "trade_deficit_perc"
+            ),
+            multiple = FALSE,
+            selected = "trade_deficit_perc"
+          ),
+          
+          # Select Y variable(s) for model.
+          
+          selectInput(
+            "y_var",
+            "Y Variable:",
+            choices = c(
+              "Growth" = "rgdp_cap"
+            ),
+            selected = "rgdp_cap"
+          ),
+          
+          # Select method for constructing model.
+          radioButtons("method", 
+                       ("Method:"), 
+                       choiceNames =
+                         methods,
+                       choiceValues =
+                         methods
+          )
+        ),
+        
+        mainPanel(
+          plotOutput("econ_regression"),
+          verbatimTextOutput(outputId = "RegSum"))
+      )),
     ############################
     
     ############## Third PAGE ##############
@@ -152,7 +201,7 @@ shinyUI(
       ),
       fluidPage(
         
-        # Sidebar with a slider input for number of bins 
+        # Sidebar  
         sidebarLayout(
           sidebarPanel(
             radioButtons("metric", 
@@ -168,15 +217,40 @@ shinyUI(
           mainPanel(plotOutput("covid_us_map")),
           
         )
-      )),
+      )
+    ),
     ############################
     
     ############## FOURTH PAGE ##############
     
-    tabPanel("Discussion",
-             titlePanel("Discussion Title"),
-             p("Tour of the modeling choices you made and 
-              an explanation of why you made them")),
+    tabPanel(
+      "Predicting Growth in the Era of COVID-19",
+      titlePanel("A Forecast of Economic Health"),
+      p("Tour of the modeling choices you made and 
+          an explanation of why you made them"),
+      # fluidPage(
+      # 
+      #   # Sidebar
+      #   sidebarLayout(
+      #     sidebarPanel(
+      #       radioButtons("metric",
+      #                    ("Pick a metric:"),
+      #                    choiceNames =
+      #                      metrics,
+      #                    choiceValues =
+      #                      metrics,
+      #                    selected = "First-Time Unemployment Claims"
+      #       )),
+      # 
+      #     # Show a plot of the generated distribution
+      #     mainPanel(plotOutput("covid_us_map")),
+      # 
+      #   )
+      # 
+      # )
+             
+    ),
+    
     
     ############################
     

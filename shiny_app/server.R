@@ -3,6 +3,7 @@
 library(shiny)
 library(tidyverse)
 library(ggplot2)
+#library(sjPlot)
 
 # Read in datasets created using the 'data_clearning' script.
 
@@ -18,26 +19,6 @@ r_state_metrics <- as_tibble(state_metrics) %>%
 
 # Define server logic required to draw a 
 server <- function(input, output) {
-  
-  output$ten_econ_plot = renderPlot({
-    countrySelected <- input$country
-    
-    plotData <- ten_econ %>% filter(country %in% countrySelected) %>%
-      pivot_longer(cols = - country,
-                   names_to = "year", 
-                   values_to = "gdp")
-    
-    ggplot(plotData, aes(x = year, y = gdp, 
-                         group = country, color = country)) +
-      geom_line() +
-      labs (x = "Year", y = "GDP Growth %", color = "Country", 
-            title = paste("GDP Growth for", 
-                          paste(countrySelected, collapse = ', '), 
-                          "in Twenty-First Century")) +
-      scale_x_discrete(breaks = seq(1980, 2020, 5)) + 
-      theme_bw() 
-      # theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-  })
   
   output$us_trends = renderPlot({
     trendSelected <- input$trend
@@ -60,6 +41,26 @@ server <- function(input, output) {
            title = "U.S. Growth Over Years") +
       scale_y_continuous(labels = scales::number_format()) +
       theme_bw()
+  })
+  
+  output$ten_econ_plot = renderPlot({
+    countrySelected <- input$country
+    
+    plotData <- ten_econ %>% filter(country %in% countrySelected) %>%
+      pivot_longer(cols = - country,
+                   names_to = "year", 
+                   values_to = "gdp")
+    
+    ggplot(plotData, aes(x = year, y = gdp, 
+                         group = country, color = country)) +
+      geom_line() +
+      labs (x = "Year", y = "GDP Growth %", color = "Country", 
+            title = paste("GDP Growth for", 
+                          paste(countrySelected, collapse = ', '), 
+                          "in Twenty-First Century")) +
+      scale_x_discrete(breaks = seq(1980, 2020, 5)) + 
+      theme_bw() 
+      # theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
   })
   
   output$covid_us_map = renderPlot({
@@ -103,6 +104,64 @@ server <- function(input, output) {
                                              size=0.5, linetype="solid", 
                                              color ="darkblue"))
     
+  })
+  
+  output$econ_regression = renderPlot({
+    methodSelected <- input$method
+    xSelected <- input$x_var
+    ySelected <- input$y_var
     
+    p <- us_yr %>%
+      ggplot(aes_string(x = xSelected, y = ySelected)) +
+      geom_point() +
+      theme_classic() +
+      geom_jitter() +
+      labs(title = "U.S Economic and Policy Metrics",
+           subtitle = "Summarized yearly from 1988-2018")
+    
+    if (xSelected == "trade_deficit_perc")
+      p <- p + xlab("Trade Balance")
+    
+    if (ySelected == "rgdp_cap")
+      p <- p + ylab("GDP per Capita")
+    
+    
+    if (methodSelected == "Linear Model")
+      p <- p + geom_smooth(method = "lm",
+                           se = TRUE,
+                           formula = y ~ x)
+    if (methodSelected == "Loess Model")
+      p <- p + geom_smooth(method = "loess",
+                           se = TRUE,
+                           formula = y ~ x)
+    p
+  })
+  
+  #.
+  output$RegSum <- renderPrint({
+    methodSelected <- input$method
+    xSelected <- input$x_var
+    ySelected <- input$y_var
+    
+    if (methodSelected == "Linear Model")
+      model_summ <-
+        reactive({
+          lm(reformulate(xSelected, ySelected),
+             data = us_yr)
+        })
+
+    if (methodSelected == "Loess Model")
+      model_summ <-
+        reactive({
+          lm(
+            reformulate(xSelected, ySelected),
+            data = us_yr,
+            method = "qr"
+          )
+        })
+    
+    # Print a summary of the model. 
+    
+    print(summary(model_summ()))
   })
 }

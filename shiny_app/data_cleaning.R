@@ -239,5 +239,9 @@ us_yr <- us_rgdp_cap %>%
 
 saveRDS(us_yr, "us_yr.RDS")
 
+# Read in weekly economic data.
 
+weekly <- read_excel("raw_data/weekly-economic-index_data.xlsx", 
+           sheet = "2008-current") %>% 
+  slice(-(1:3))
 
