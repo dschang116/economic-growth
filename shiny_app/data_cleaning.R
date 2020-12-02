@@ -1,194 +1,59 @@
-############## PREP ##############
-
 library(tidyverse)
 library(readxl)
-require(ggplot2)
+library(ggplot2)
 library(lubridate)
+library(rstanarm)
+library(tidymodels)
 
-############## Cleaning Events ##############
-
-# Read in IMF rGDP data. Rename first column to country 
-# Drop NA values.
-
-imf_rgdp <- read_excel("raw_data/imf-rgdp.xls") %>%
-  rename(country = "Real GDP growth (Annual percent change)") %>%
-  drop_na()
-
-# Replace values of no data with NA.
-
-imf_rgdp[imf_rgdp == "no data"] <- NA
-
-# Rename China.
-
-imf_rgdp$country[imf_rgdp$country == 
-                       "China, People's Republic of"] <- "China"
-
-# Ten biggest economies.
-countries <- c("Brazil", "Canada", "China", "France", 
-               "Germany", "India", "Italy", "Japan", 
-               "United Kingdom", "United States") 
-
-# Filter and change first column country as factor and rest as numeric column
-# type.
-
-ten_econ <- imf_rgdp %>% 
-  filter(country %in% countries) %>% 
-  mutate_at(1, as.factor) %>%
-  mutate_at(2:47, as.numeric) %>% 
-  select(c(1:42))
-
-# Save the resulting data for use in Shiny App.
-
-saveRDS(ten_econ, "ten_econ.RDS")
-
-# Read in state population data.
-
-state_pop <- read_csv("raw_data/state_pop.csv", col_types = cols(
-  .default = col_double(),
-  SUMLEV = col_character(),
-  REGION = col_character(),
-  DIVISION = col_character(),
-  STATE = col_character(),
-  NAME = col_character()
-)) %>% 
-  select(NAME, POPESTIMATE2019) %>% 
-  rename(region = NAME,
-         pop = POPESTIMATE2019) %>% 
-  slice(-(1:5)) %>% 
-  filter(! region %in% c("District of Columbia", "Puerto Rico")) %>% 
-  mutate(region = tolower(region))
-  
-
-# Read in state first time unemployment claims data.
-
-unemploy_state <- read_excel("raw_data/unemploy-state.xlsx") %>% 
-  rename(region = "State",
-         wk_ended = `Filed week ended`,
-         in_claims = `Initial Claims`) %>% 
-  select(region, wk_ended, in_claims) %>% 
-  group_by(region) %>% 
-  summarize(tot_claims = sum(in_claims), 
-            .groups = "drop") %>%
-  mutate(region = tolower(region))
-
-# Read in state unemployment rate data.
-
-unemploy_perc_state <- read_excel("raw_data/unemploy-perc-state.xlsx") %>% 
-  mutate(avg_perc = rowMeans(.[2:4])) %>% 
-  rename(region = "State")%>%
-  mutate(region = tolower(region))
-
-# Read in U.S. State and governor
-
-us_states <- read_csv("raw_data/us-state-govs.csv",
-                      col_types = cols(StateName = col_character(),
-                                       StateAbbr = col_character(),
-                                       DemGov = col_number())) %>%
-  mutate(StateName = tolower(StateName))
-
-# Read in states COVID-19 data.
-
-covid <- read_csv("raw_data/states-covid.csv", 
-                  col_types = cols(
-                    .default = col_double(),
-                    date = col_date(format = ""),
-                    state = col_character(),
-                    dataQualityGrade = col_character()
-                  )) %>% 
-  filter(! state %in% c("AS", "DC", "GU", "MP", "PR", "VI")) %>% 
-  select(state, death, positive, totalTestResults)
-
-# Replace NA value with 0.
-
-covid[is.na(covid)] <- 0
-
-covid <- us_states %>% 
-  inner_join(covid, by = c("StateAbbr" = "state"))
-
-# Summarize 
-
-covid_summ <- covid %>%
-  group_by(StateName) %>% 
-  summarize(tot_death = max(death),
-            tot_pos = max(positive),
-            tot_test = max(totalTestResults),
-            pos_rate = tot_pos / tot_test,
-            .groups = "drop") %>%
-  mutate(StateName = tolower(StateName)) %>%
-  rename(region = StateName) %>% 
-  inner_join(state_pop, by = "region") %>% 
-  mutate(deaths_thous = tot_death * 1000 / pop,
-         tests_thous = tot_test * 1000 / pop) %>% 
-  select(region, pos_rate, deaths_thous, tot_pos, tests_thous)
-
-# Get U.S. states from ggmap map_data
-
-states <- map_data("state")
-
-# Perform join.
-
-state_metrics <- states %>% 
-  inner_join(unemploy_state, by = "region") %>% 
-  inner_join(unemploy_perc_state, by = "region") %>% 
-  inner_join(covid_summ, by = "region") %>% 
-  inner_join(us_states, by = c("region" = "StateName")) %>% 
-  filter(region != "District of Columbia") %>% 
-  select(region, long, lat, group, tot_claims, avg_perc,
-         deaths_thous, pos_rate, tot_pos, tests_thous, DemGov)
-
-# Save the resulting data for use in Shiny App.
-
-saveRDS(state_metrics, "state_metrics.RDS")
+##########################################################
 
 # Read in rGDP per capita for the U.S.
 
-us_rgdp_cap <- read_excel("raw_data/rgdp-cap.xls") %>% 
-  slice(-c(1:10)) %>%
-  rename(obs_date = `FRED Graph Observations`,
-         rgdp_cap = ...2) %>% 
-  mutate(obs_date = 1947:2020) %>% 
+us_rgdp_cap <- read_excel("raw_data/rgdp-cap.xls", skip = 10) %>%
+  rename(obs_date = "observation_date",
+         rgdp_cap = "A939RX0Q048SBEA") %>%
+  mutate(obs_date = 1947:2020) %>%
   slice(42:72)
 
 # Read in rGDP per capita growth for the U.S.
 
-us_rgdp_cap_growth <- read_excel("raw_data/rgdp-cap-growth.xls") %>%
-  slice(-c(1:10)) %>%
-  rename(obs_date = `FRED Graph Observations`,
-         rgdp_cap_gr = ...2) %>% 
-  mutate(obs_date = 1948:2020) %>% 
+us_rgdp_cap_growth <- read_excel("raw_data/rgdp-cap-growth.xls", skip = 10) %>%
+  rename(obs_date = "observation_date",
+         rgdp_cap_gr = "A939RX0Q048SBEA_PCH") %>%
+  mutate(obs_date = 1948:2020) %>%
   slice(41:71)
 
 # Read in purchasing power parity converted GDP per capita for the U.S.
 
-corp_profits <- read_excel("raw_data/corp-profits.xls") %>% 
-  slice(-c(1:10)) %>%
-  rename(obs_date = `FRED Graph Observations`,
-         profits = ...2) %>% 
-  mutate(obs_date = 1947:2020) %>% 
+corp_profits <- read_excel("raw_data/corp-profits.xls", skip = 10) %>%
+  rename(obs_date = "observation_date",
+         profits = "CP") %>%
+  mutate(obs_date = 1947:2020) %>%
   slice(42:72)
 
-# Read in S&P 500 Index historical data.
+# Read in S&P 500 Index historical data
 
-sp500 <- read_csv("raw_data/sp500.csv", col_types = cols(
-  Date = col_date(format = ""),
-  Open = col_double(),
-  High = col_double(),
-  Low = col_double(),
-  Close = col_double(),
-  `Adj Close` = col_double(),
-  Volume = col_double()
-)) %>% 
-  mutate(month = month(Date), 
+sp500 <- read_csv(
+  "raw_data/sp500.csv",
+  col_types = cols(
+    Date = col_date(format = ""),
+    Open = col_double(),
+    High = col_double(),
+    Low = col_double(),
+    Close = col_double(),
+    `Adj Close` = col_double(),
+    Volume = col_double()
+  )) %>%
+  mutate(month = month(Date),
          obs_date = year(Date),
-         close = Close) %>% 
-  group_by(obs_date) %>% 
-  filter(row_number() == n()) %>% 
-  select(obs_date, close) %>% 
-  ungroup() %>% 
+         close = Close) %>%
+  group_by(obs_date) %>%
+  filter(row_number() == n()) %>%
+  select(obs_date, close) %>%
+  ungroup() %>%
   slice(62:92)
 
-
-# Read in patents data.
+# Read in patents data
 
 patents_granted <- read_excel("raw_data/patents.xlsx") %>% 
   slice(5:35) %>% 
@@ -204,44 +69,249 @@ patents_granted <- read_excel("raw_data/patents.xlsx") %>%
          tot_patents = rev(tot_patents)) %>% 
   select(obs_date, tot_patents)
 
-# Read in mergers and acquistions data.
+# Read in mergers and acquisitions data
 
-m_a <- read_excel("raw_data/m-a.xlsx") %>% 
-  slice(-1) %>% 
-  select(Value) %>% 
-  rename(value_m_a = Value) %>% 
-  mutate(obs_date = 1985:2020) %>% 
-  slice(4:34) %>% 
+m_a <- read_excel("raw_data/m-a.xlsx") %>%
+  slice(-1) %>%
+  select(Value) %>%
+  rename(value_m_a = Value) %>%
+  mutate(obs_date = 1985:2020) %>%
+  slice(4:34) %>%
   select(obs_date, value_m_a)
 
-# Read in trade balance data.
+# Read in trade balance data
 
-trade_balance <- read_excel("raw_data/trade-balance.xlsx") %>% 
-  mutate(month = month(date), 
-         obs_date = year(date)) %>% 
-  rename(trade_deficit_perc = "Percent") %>% 
-  select(obs_date, trade_deficit_perc) %>% 
+trade_balance <- read_excel("raw_data/trade-balance.xlsx") %>%
+  mutate(month = month(date),
+         obs_date = year(date)) %>%
+  rename(trade_deficit = 2) %>%
+  select(obs_date, trade_deficit) %>%
   slice(19:49)
 
-# Perform join.
+# Perform join
 
-us_yr <- us_rgdp_cap %>% 
+us_by_year <- us_rgdp_cap %>%
   inner_join(us_rgdp_cap_growth, by = "obs_date") %>%
-  inner_join(corp_profits, by = "obs_date") %>% 
-  inner_join(sp500, by = "obs_date") %>% 
-  inner_join(patents_granted, by = "obs_date") %>% 
-  inner_join(m_a, by = "obs_date") %>% 
-  inner_join(trade_balance, by = "obs_date") %>% 
-  mutate(rgdp_cap = as.numeric(rgdp_cap),
-         rgdp_cap_gr = as.numeric(rgdp_cap_gr),
-         profits = as.numeric(profits),
-         value_m_a = as.numeric(value_m_a))
+  inner_join(corp_profits, by = "obs_date") %>%
+  inner_join(sp500, by = "obs_date") %>%
+  inner_join(patents_granted, by = "obs_date") %>%
+  inner_join(m_a, by = "obs_date") %>%
+  inner_join(trade_balance, by = "obs_date") %>%
+  mutate(
+    rgdp_cap = as.numeric(rgdp_cap),
+    rgdp_cap_gr = as.numeric(rgdp_cap_gr),
+    profits = as.numeric(profits),
+    value_m_a = as.numeric(value_m_a)
+  )
 
-saveRDS(us_yr, "us_yr.RDS")
+# Save the resulting data
 
-# Read in weekly economic data.
+saveRDS(us_by_year, "us_by_year.RDS")
 
-weekly <- read_excel("raw_data/weekly-economic-index_data.xlsx", 
-           sheet = "2008-current") %>% 
-  slice(-(1:3))
+##########################################################
+
+# Read in IMF real GDP data.
+
+# Rename first column to country.
+# Drop no data and NA values.
+# Rename China.
+
+imf_rgdp <- read_excel("raw_data/imf-rgdp.xls") %>%
+  rename(country = "Real GDP growth (Annual percent change)") %>%
+  mutate_all( ~ replace(., . == "no data", NA)) %>%
+  drop_na() %>%
+  mutate(country = replace(country, country == "China, People's Republic of", 
+                           "China"))
+
+
+# Ten biggest economy countries.
+countries <- c(
+  "Brazil",
+  "Canada",
+  "China",
+  "France",
+  "Germany",
+  "India",
+  "Italy",
+  "Japan",
+  "United Kingdom",
+  "United States"
+)
+
+# Filter based on ten biggest economy countries.
+# Change first column country as factor type and rest as numeric column type.
+
+ten_econ <- imf_rgdp %>%
+  filter(country %in% countries) %>%
+  mutate_at(1, as.factor) %>%
+  mutate_at(2:47, as.numeric) %>%
+  select(c(1:42))
+
+# Save the resulting data
+
+saveRDS(ten_econ, "ten_econ.RDS")
+
+##########################################################
+# Read in state first time unemployment claims data.
+# Total initial claims for 44 weeks of 2020 for each state
+# From week of 1/4/2020 to 10/31/2020
+
+state_unemployment <- read_excel("raw_data/unemploy-state.xlsx") %>%
+  rename(state = "State",
+         initial_claims = `Initial Claims`) %>%
+  select(state, initial_claims) %>%
+  group_by(state) %>%
+  summarize(tot_claims = sum(initial_claims),
+            .groups = "drop") %>%
+  mutate(state = tolower(state))
+
+# Read in state unemployment rate data
+# Average unemployment rate from July to September of 2020 for each state
+
+state_unemployment_rate <-
+  read_excel("raw_data/unemploy-perc-state.xlsx") %>%
+  mutate(unemp_rate = rowMeans(select(., "July", "August", "September"))) %>%
+  rename(state = "State") %>%
+  select(state, unemp_rate) %>%
+  mutate(state = tolower(state))
+
+# Read in U.S. States and if governor is democratic
+
+us_states <- read_csv(
+  "raw_data/us-state-govs.csv",
+  col_types = cols(
+    StateName = col_character(),
+    StateAbbr = col_character(),
+    DemGov = col_number()
+  )
+) %>%
+  rename(state = "StateName") %>%
+  rename(dem_gov = "DemGov") %>%
+  mutate(state = tolower(state))
+
+# Read in state population data.
+
+state_pop <- read_csv(
+  "raw_data/state_pop.csv",
+  col_types = cols(
+    .default = col_double(),
+    SUMLEV = col_character(),
+    REGION = col_character(),
+    DIVISION = col_character(),
+    STATE = col_character(),
+    NAME = col_character()
+  )
+) %>%
+  select(NAME, POPESTIMATE2019) %>%
+  rename(state = NAME,
+         pop = POPESTIMATE2019) %>%
+  slice(-(1:5)) %>%
+  filter(!state %in% c("District of Columbia", "Puerto Rico")) %>%
+  mutate(state = tolower(state))
+
+# Read in states COVID-19 data.
+
+# Data are collected from 3/6/2020 to 11/11/2020 and accumulative
+
+state_covid <- read_csv(
+  "raw_data/states-covid.csv",
+  col_types = cols(
+    .default = col_double(),
+    date = col_date(format = ""),
+    state = col_character(),
+    dataQualityGrade = col_character()
+  )) %>%
+  filter(date == as.Date("2020-11-11")) %>%
+  select(state, death, positive, totalTestResults) %>%
+  rename(StateAbbr = state,
+         tot_death = death, 
+         tot_pos = positive, 
+         tot_test = totalTestResults) %>%
+  inner_join(us_states, by = "StateAbbr") %>%
+  inner_join(state_pop, by = "state") %>%
+  mutate(pos_rate = tot_pos / tot_test,
+         death_per_1000 = tot_death * 1000 / pop,
+         test_per_1000 = tot_test * 1000 / pop)
+
+# Get U.S. states from ggmap map_data then perform join
+
+state_metrics <- map_data("state") %>%
+  rename(state = region) %>%
+  inner_join(state_unemployment, by = "state") %>%
+  inner_join(state_unemployment_rate, by = "state") %>%
+  inner_join(state_covid, by = "state") %>%
+  select(
+    state,
+    long,
+    lat,
+    group,
+    tot_claims,
+    unemp_rate,
+    pos_rate,
+    tot_pos,
+    death_per_1000,
+    test_per_1000,
+    dem_gov
+  )
+
+# Save the resulting data
+
+saveRDS(state_metrics, "state_metrics.RDS")
+
+##########################################################
+
+# Read in weekly economic index data
+
+wei <- read_excel("raw_data/weekly-economic-index.xlsx", skip = 639) %>% 
+  mutate(index = `1.55`,
+         week = 1:38) %>% 
+  select(week, index)
+
+# Read in weekly case counts data
+
+weekly_trends <- read_excel("raw_data/covid-weekly-trends.xlsx") %>% 
+  mutate(new_cases = `Weekly New Cases`,
+         new_deaths = `Weekly New Deaths`,
+         week = 1:40) %>% 
+  slice(1:38) %>% 
+  select(week, new_cases, new_deaths)
+
+# Read in initial claims data
+
+initial_claims <- read_excel("raw_data/initial-claims-weekly.xls", skip = 52) %>% 
+  mutate(claims = `217000`,
+         week = 1:38) %>% 
+  select(week, claims)
+
+# Read in positivity rate data
+
+pos_rate_weekly <- read_csv("raw_data/national-activity-indicators.csv", col_types = cols(
+  X1 = col_character(),
+  X2 = col_character(),
+  X3 = col_character(),
+  X4 = col_character(),
+  X5 = col_character(),
+  X6 = col_character(),
+  X7 = col_logical(),
+  X8 = col_logical(),
+  X9 = col_logical(),
+  X10 = col_logical()
+), skip = 6) %>% 
+  mutate(pos_rate = `% of Specimens Positive for SARS-CoV-2`,
+         week = 1:38) %>% 
+  select(week, pos_rate)
+
+# Perform join to create tibble weekly
+
+weekly <- inner_join(wei, weekly_trends, by = "week") %>% 
+  inner_join(initial_claims, by = "week") %>% 
+  inner_join(pos_rate_weekly, by = "week")
+
+# Save the resulting data
+
+saveRDS(weekly, "weekly.RDS")
+
+
+
+
 

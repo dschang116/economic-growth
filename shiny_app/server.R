@@ -1,98 +1,251 @@
-############## PREP ##############
-
-library(shiny)
-library(tidyverse)
-library(ggplot2)
-#library(sjPlot)
-
-# Read in datasets created using the 'data_clearning' script.
+# Read in datasets created from 'data_cleaning' script.
 
 ten_econ <- readRDS("ten_econ.RDS")
 state_metrics <- readRDS("state_metrics.RDS")
-us_yr <- readRDS("us_yr.RDS")
+us_by_year <- readRDS("us_by_year.RDS")
+weekly <- readRDS("weekly.RDS")
 
-d_state_metrics <- as_tibble(state_metrics) %>% 
-  filter(DemGov == "1")
+d_state_metrics <- as_tibble(state_metrics) %>%
+  filter(dem_gov == "1") %>%
+  mutate(state = tools::toTitleCase(state))
 
-r_state_metrics <- as_tibble(state_metrics) %>% 
-  filter(DemGov == "0")
+r_state_metrics <- as_tibble(state_metrics) %>%
+  filter(dem_gov == "0")%>%
+  mutate(state = tools::toTitleCase(state))
 
-# Define server logic required to draw a 
+# Define server side logic 
+
 server <- function(input, output) {
   
-  output$us_trends = renderPlot({
-    trendSelected <- input$trend
+  ############## FIRST TAB ##############
+
+  output$us_trend_plot = renderPlot({
+    measureSelected <- input$measure
     
-    trendCol <- case_when(
-      trendSelected == "Real GDP per Capita" ~ us_yr$rgdp_cap,
-      trendSelected == "Real GDP per Capita Growth (Yearly)" ~ us_yr$rgdp_cap_gr,
-      trendSelected == "Corporate Profits After Tax" ~ us_yr$profits,
-      trendSelected == "S&P 500 Index" ~ us_yr$close,
-      trendSelected == "Patents Granted" ~ us_yr$tot_patents,
-      trendSelected == "Mergers and Acquistions" ~ us_yr$value_m_a,
-      trendSelected == "Trade Balance" ~ us_yr$trade_deficit_perc
+    measureCol <- case_when(
+      measureSelected == "Real GDP Growth" ~ us_by_year$rgdp_cap_gr,
+      measureSelected == "Real GDP per Capita" ~ us_by_year$rgdp_cap,
+      measureSelected == "Trade Balance" ~ us_by_year$trade_deficit,
+      measureSelected == "Corporate Profits After Tax" ~ us_by_year$profits,
+      measureSelected == "S&P 500 Index" ~ us_by_year$close,
+      measureSelected == "Patents Granted" ~ us_by_year$tot_patents,
+      measureSelected == "Mergers and Acquistions" ~ us_by_year$value_m_a
     )
     
+    y_lab_suffix <- case_when(
+      measureSelected == "Real GDP Growth" ~ "(%)",
+      measureSelected == "Real GDP per Capita" ~ "($)",
+      measureSelected == "Trade Balance" ~ "(Billions of $)",
+      measureSelected == "Corporate Profits After Tax" ~ "(Billions of $)",
+      measureSelected == "S&P 500 Index" ~ "",
+      measureSelected == "Patents Granted" ~ "",
+      measureSelected == "Mergers and Acquistions" ~ ""
+    )
     
-    ggplot(data = us_yr, aes(x = obs_date, y = trendCol)) +
-      geom_line(size = 1) +
-      labs(y = trendSelected,
-           x = "Year",
-           title = "U.S. Growth Over Years") +
-      scale_y_continuous(labels = scales::number_format()) +
-      theme_bw()
+    us_by_year %>%
+      ggplot(aes(x = obs_date, y = measureCol)) +
+        geom_line(size = 1) +
+        labs(x = "Year",
+             y = paste(measureSelected, y_lab_suffix),
+             title = paste(measureSelected, "From 1988 to 2018")) +
+        scale_x_continuous(breaks = seq(from = 1990, to = 2018, by = 5))+
+        scale_y_continuous(labels = scales::comma_format()) +
+        theme_bw() +
+        theme(plot.title = element_text(size = 20, face = "bold", color = "darkgreen"))
   })
   
+  #######################################
+    
   output$ten_econ_plot = renderPlot({
     countrySelected <- input$country
     
-    plotData <- ten_econ %>% filter(country %in% countrySelected) %>%
-      pivot_longer(cols = - country,
-                   names_to = "year", 
-                   values_to = "gdp")
-    
-    ggplot(plotData, aes(x = year, y = gdp, 
-                         group = country, color = country)) +
+    ten_econ %>% filter(country %in% countrySelected) %>%
+    pivot_longer(cols = -country,
+                 names_to = "year",
+                 values_to = "gdp") %>%
+    ggplot(aes(x = year, y = gdp, group = country, color = country)) +
       geom_line() +
-      labs (x = "Year", y = "GDP Growth %", color = "Country", 
-            title = paste("GDP Growth for", 
-                          paste(countrySelected, collapse = ', '), 
-                          "in Twenty-First Century")) +
-      scale_x_discrete(breaks = seq(1980, 2020, 5)) + 
-      theme_bw() 
-      # theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+      labs (
+        x = "Year",
+        y = "GDP Growth (%)",
+        color = "Country",
+        title = paste(
+          "GDP Growth for",
+          paste(countrySelected, collapse = ', '),
+          "in Twenty-First Century"
+        )
+      ) +
+      scale_x_discrete(breaks = seq(1980, 2020, 5)) +
+      theme_bw()
   })
+  
+  ############## SECOND TAB ##############
+  
+  output$econ_regression_plot = renderPlot({
+    methodSelected <- input$method
+    xSelected <- input$x_var
+    ySelected <- input$y_var
+
+    x_var <- case_when(
+      xSelected == "Real GDP Growth" ~ "rgdp_cap_gr",
+      xSelected == "Real GDP per Capita" ~ "rgdp_cap",
+      xSelected == "Trade Balance" ~ "trade_deficit",
+      xSelected == "Corporate Profits After Tax" ~ "profits",
+      xSelected == "S&P 500 Index" ~ "close",
+      xSelected == "Patents Granted" ~ "tot_patents",
+      xSelected == "Mergers and Acquistions" ~ "value_m_a"
+    )
+    
+    y_var <- case_when(
+      ySelected == "Real GDP Growth" ~ "rgdp_cap_gr",
+      ySelected == "Real GDP per Capita" ~ "rgdp_cap",
+      ySelected == "Trade Balance" ~ "trade_deficit",
+      ySelected == "Corporate Profits After Tax" ~ "profits",
+      ySelected == "S&P 500 Index" ~ "close",
+      ySelected == "Patents Granted" ~ "tot_patents",
+      ySelected == "Mergers and Acquistions" ~ "value_m_a"
+    )
+    
+    x_lab_suffix <- case_when(
+      xSelected == "Real GDP Growth" ~ "(%)",
+      xSelected == "Real GDP per Capita" ~ "($)",
+      xSelected == "Trade Balance" ~ "(Billions of $)",
+      xSelected == "Corporate Profits After Tax" ~ "(Billions of $)",
+      xSelected == "S&P 500 Index" ~ "",
+      xSelected == "Patents Granted" ~ "",
+      xSelected == "Mergers and Acquistions" ~ ""
+    )
+    
+    y_lab_suffix <- case_when(
+      ySelected == "Real GDP Growth" ~ "(%)",
+      ySelected == "Real GDP per Capita" ~ "($)",
+      ySelected == "Trade Balance" ~ "(Billions of $)",
+      ySelected == "Corporate Profits After Tax" ~ "(Billions of $)",
+      ySelected == "S&P 500 Index" ~ "",
+      ySelected == "Patents Granted" ~ "",
+      ySelected == "Mergers and Acquistions" ~ ""
+    )
+    
+    model_method <- case_when(
+      methodSelected == "Linear Model" ~ "lm",
+      methodSelected == "Loess Model" ~ "loess"
+    )
+    
+    us_by_year %>%
+      ggplot(aes_string(x = x_var, y = y_var)) +
+      geom_point() +
+      geom_jitter() +
+      geom_smooth(method = model_method,
+                  se = TRUE,
+                  formula = y ~ x) +
+      labs(title = "U.S Economic and Policy Metrics",
+           subtitle = "Summarized yearly from 1988-2018",
+           x = paste(xSelected, x_lab_suffix),
+           y = paste(ySelected, y_lab_suffix)) +
+      theme_classic() +
+      theme(plot.title = 
+              element_text(size = 20, face = "bold", color = "darkgreen"),
+            plot.subtitle = 
+              element_text(size = 15, face = "bold", color = "darkgreen"))
+  })
+  
+  #######################################
+  
+  output$econ_regression_summary <- renderPrint({
+    methodSelected <- input$method
+    xSelected <- input$x_var
+    ySelected <- input$y_var
+    
+    x_var <- case_when(
+      xSelected == "Real GDP Growth" ~ "rgdp_cap_gr",
+      xSelected == "Real GDP per Capita" ~ "rgdp_cap",
+      xSelected == "Trade Balance" ~ "trade_deficit",
+      xSelected == "Corporate Profits After Tax" ~ "profits",
+      xSelected == "S&P 500 Index" ~ "close",
+      xSelected == "Patents Granted" ~ "tot_patents",
+      xSelected == "Mergers and Acquistions" ~ "value_m_a"
+    )
+    
+    y_var <- case_when(
+      ySelected == "Real GDP Growth" ~ "rgdp_cap_gr",
+      ySelected == "Real GDP per Capita" ~ "rgdp_cap",
+      ySelected == "Trade Balance" ~ "trade_deficit",
+      ySelected == "Corporate Profits After Tax" ~ "profits",
+      ySelected == "S&P 500 Index" ~ "close",
+      ySelected == "Patents Granted" ~ "tot_patents",
+      ySelected == "Mergers and Acquistions" ~ "value_m_a"
+    )
+    
+    if (methodSelected == "Linear Model")
+      lmsum <-
+      reactive({
+        lm(reformulate(x_var, y_var),
+           data = us_by_year,
+           method = "lm")
+      })
+    
+    if (methodSelected == "Loess Model")
+      lmsum <-
+      reactive({
+        lm(reformulate(x_var, y_var),
+           data = us_by_year,
+           method = "loess")
+      })
+    
+    # Print a summary of the model.
+    print(summary(lmsum()))
+  })
+  
+  ############## THIRD TAB ##############
   
   output$covid_us_map = renderPlot({
     metricSelected <- input$metric
     
     d_metricCol <- case_when(
-      metricSelected == "First-Time Unemployment Claims" ~ d_state_metrics$tot_claims,
-      metricSelected == "Average Percent Unemployed (July-September)" ~ d_state_metrics$avg_perc, 
-      metricSelected == "Deaths Per Thousand" ~ d_state_metrics$deaths_thous, 
-      metricSelected == "Total Positive Cases" ~ d_state_metrics$tot_pos, 
-      metricSelected == "Tests Per Thousand" ~ d_state_metrics$tests_thous, 
-      metricSelected == "Positivity Rate" ~ d_state_metrics$pos_rate
+      metricSelected == "Weekly Initial Claims" ~ d_state_metrics$tot_claims,
+      metricSelected == "Unemployment Rate" ~ d_state_metrics$unemp_rate,
+      metricSelected == "Total Positive Cases" ~ d_state_metrics$tot_pos,
+      metricSelected == "Positive Rate" ~ d_state_metrics$pos_rate,
+      metricSelected == "Tests Per Thousand" ~ d_state_metrics$test_per_1000,
+      metricSelected == "Deaths Per Thousand" ~ d_state_metrics$death_per_1000
     )
     
     r_metricCol <- case_when(
-      metricSelected == "First-Time Unemployment Claims" ~ r_state_metrics$tot_claims,
-      metricSelected == "Average Percent Unemployed (July-September)" ~ r_state_metrics$avg_perc, 
-      metricSelected == "Deaths Per Thousand" ~ r_state_metrics$deaths_thous, 
-      metricSelected == "Total Positive Cases" ~ r_state_metrics$tot_pos, 
-      metricSelected == "Tests Per Thousand" ~ r_state_metrics$tests_thous, 
-      metricSelected == "Positivity Rate" ~ r_state_metrics$pos_rate
+      metricSelected == "Weekly Initial Claims" ~ r_state_metrics$tot_claims,
+      metricSelected == "Unemployment Rate" ~ r_state_metrics$unemp_rate,
+      metricSelected == "Total Positive Cases" ~ r_state_metrics$tot_pos,
+      metricSelected == "Positive Rate" ~ r_state_metrics$pos_rate,
+      metricSelected == "Tests Per Thousand" ~ r_state_metrics$test_per_1000,
+      metricSelected == "Deaths Per Thousand" ~ r_state_metrics$death_per_1000
+    )
+    
+    plot_title <- case_when(
+      metricSelected == "Weekly Initial Claims" ~ 
+        "Total Weekly Initial Claims (1/4/2020 to 10/31/2020)",
+      metricSelected == "Unemployment Rate" ~ 
+        "Average Unemployment Rate (July 2020 to September 2020)",
+      metricSelected == "Total Positive Cases" ~ 
+        "Total Positive Cases (3/6/2020 to 11/11/2020)",
+      metricSelected == "Positive Rate" ~ 
+        "Positive Rate from Total Tests (3/6/2020 to 11/11/2020)",
+      metricSelected == "Tests Per Thousand" ~ 
+        "Tests Per Thousand Based on State Population (3/6/2020 to 11/11/2020)",
+      metricSelected == "Deaths Per Thousand" ~ 
+        "Deaths Per Thousand Based on State Population (3/6/2020 to 11/11/2020)"
     )
     
     ggplot() + 
-      geom_polygon(data = d_state_metrics, aes(x = long, y = lat, fill = d_metricCol, group = group), 
+      geom_polygon(data = d_state_metrics, aes(x = long, y = lat, 
+                                            fill = d_metricCol, group = group), 
                    color = "blue") + 
-      geom_polygon(data = r_state_metrics, aes(x = long, y = lat, fill = r_metricCol, group = group), 
+      geom_polygon(data = r_state_metrics, aes(x = long, y = lat, 
+                                            fill = r_metricCol, group = group), 
                    color = "red") + 
       coord_fixed(1.5) +
-      scale_fill_gradient(low = "white", high = "black", label = scales::comma) +
-      theme_bw() +
-      labs(title = metricSelected) +
+      scale_fill_gradient(low = "white", high = "black", 
+                          label = scales::comma) +
+      theme_void() +
+      labs(title = plot_title) +
       theme(axis.title.x = element_blank(),
             axis.text.x = element_blank(),
             axis.ticks.x = element_blank(),
@@ -100,68 +253,92 @@ server <- function(input, output) {
             axis.text.y = element_blank(),
             axis.ticks.y = element_blank(),
             legend.title = element_blank(),
-            legend.background = element_rect(fill="gray",
-                                             size=0.5, linetype="solid", 
-                                             color ="darkblue"))
+            plot.title = element_text(size = 20, face = "bold", color = "darkgreen"))
+  })
+  
+  #######################################
+  
+  output$d_state_metrics_table <- renderDataTable({
+    datatable(
+      d_state_metrics %>%
+        select(
+          "State" = state,
+          "Total Initial Claims" = tot_claims,
+          "Unemp Rate %" = unemp_rate,
+          "Total Positive" = tot_pos,
+          "Positive Rate %" = pos_rate,
+          "Test per 1000" = test_per_1000,
+          "Death per 1000" = death_per_1000
+        ) %>%
+        distinct() %>%
+        mutate(across(is.numeric, ~ round(., 2))),
+      rownames = FALSE,
+      options = list(lengthChange = FALSE)
+    ) %>%
+      formatCurrency(c(2,4), currency = "", mark = ",", digits = 0)
+  })
+  
+  #######################################
+  
+  output$r_state_metrics_table <- renderDataTable({
+    datatable(
+      r_state_metrics %>%
+        select(
+          "State" = state,
+          "Total Initial Claims" = tot_claims,
+          "Unemp Rate %" = unemp_rate,
+          "Total Positive" = tot_pos,
+          "Positive Rate %" = pos_rate,
+          "Test per 1000" = test_per_1000,
+          "Death per 1000" = death_per_1000
+        ) %>%
+        distinct() %>%
+        mutate(across(is.numeric, ~ round(., 2))),
+      rownames = FALSE,
+      options = list(lengthChange = FALSE)
+    ) %>%
+    formatCurrency(c(2,4), currency = "", mark = ",", digits = 0)
+  })
+  
+  ############## FOURTH TAB ##############
+  
+  output$wei_posterior = renderPlot({
+    weekSelected <- input$week
+    deathsSelected <- input$deaths
+    claimsSelected <- input$claims
+    
+    fit_1 <- stan_glm(formula = index ~ week + new_deaths + claims,
+                      data = weekly,
+                      refresh = 0)
+    
+    new_obs <- tibble(week = weekSelected,
+                      new_deaths = deathsSelected,
+                      claims = claimsSelected)
+    
+    posterior_predict(fit_1, newdata = new_obs) %>%
+      as_tibble() %>% 
+      rename(wei = `1`) %>% 
+      ggplot(aes(x = wei, y = after_stat(count/sum(count)))) +
+      geom_histogram(bins = 100, alpha = 0.5) +
+      theme_classic()
     
   })
   
-  output$econ_regression = renderPlot({
-    methodSelected <- input$method
-    xSelected <- input$x_var
-    ySelected <- input$y_var
-    
-    p <- us_yr %>%
-      ggplot(aes_string(x = xSelected, y = ySelected)) +
-      geom_point() +
-      theme_classic() +
-      geom_jitter() +
-      labs(title = "U.S Economic and Policy Metrics",
-           subtitle = "Summarized yearly from 1988-2018")
-    
-    if (xSelected == "trade_deficit_perc")
-      p <- p + xlab("Trade Balance")
-    
-    if (ySelected == "rgdp_cap")
-      p <- p + ylab("GDP per Capita")
-    
-    
-    if (methodSelected == "Linear Model")
-      p <- p + geom_smooth(method = "lm",
-                           se = TRUE,
-                           formula = y ~ x)
-    if (methodSelected == "Loess Model")
-      p <- p + geom_smooth(method = "loess",
-                           se = TRUE,
-                           formula = y ~ x)
-    p
-  })
-  
-  #.
-  output$RegSum <- renderPrint({
-    methodSelected <- input$method
-    xSelected <- input$x_var
-    ySelected <- input$y_var
-    
-    if (methodSelected == "Linear Model")
-      model_summ <-
-        reactive({
-          lm(reformulate(xSelected, ySelected),
-             data = us_yr)
-        })
-
-    if (methodSelected == "Loess Model")
-      model_summ <-
-        reactive({
-          lm(
-            reformulate(xSelected, ySelected),
-            data = us_yr,
-            method = "qr"
-          )
-        })
-    
-    # Print a summary of the model. 
-    
-    print(summary(model_summ()))
-  })
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
