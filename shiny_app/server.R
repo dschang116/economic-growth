@@ -199,7 +199,7 @@ server <- function(input, output) {
       metricSelected == "Weekly Initial Claims" ~ d_state_metrics$tot_claims,
       metricSelected == "Unemployment Rate" ~ d_state_metrics$unemp_rate,
       metricSelected == "Total Positive Cases" ~ d_state_metrics$tot_pos,
-      metricSelected == "Positive Rate" ~ d_state_metrics$pos_rate,
+      metricSelected == "Positivity Rate" ~ d_state_metrics$pos_rate,
       metricSelected == "Tests Per Thousand" ~ d_state_metrics$test_per_1000,
       metricSelected == "Deaths Per Thousand" ~ d_state_metrics$death_per_1000
     )
@@ -208,7 +208,7 @@ server <- function(input, output) {
       metricSelected == "Weekly Initial Claims" ~ r_state_metrics$tot_claims,
       metricSelected == "Unemployment Rate" ~ r_state_metrics$unemp_rate,
       metricSelected == "Total Positive Cases" ~ r_state_metrics$tot_pos,
-      metricSelected == "Positive Rate" ~ r_state_metrics$pos_rate,
+      metricSelected == "Positivity Rate" ~ r_state_metrics$pos_rate,
       metricSelected == "Tests Per Thousand" ~ r_state_metrics$test_per_1000,
       metricSelected == "Deaths Per Thousand" ~ r_state_metrics$death_per_1000
     )
@@ -220,8 +220,8 @@ server <- function(input, output) {
         "Average Unemployment Rate (July 2020 to September 2020)",
       metricSelected == "Total Positive Cases" ~ 
         "Total Positive Cases (3/6/2020 to 11/11/2020)",
-      metricSelected == "Positive Rate" ~ 
-        "Positive Rate from Total Tests (3/6/2020 to 11/11/2020)",
+      metricSelected == "Positivity Rate" ~ 
+        "Positivity Rate from Total Tests (3/6/2020 to 11/11/2020)",
       metricSelected == "Tests Per Thousand" ~ 
         "Tests Per Thousand Based on State Population (3/6/2020 to 11/11/2020)",
       metricSelected == "Deaths Per Thousand" ~ 

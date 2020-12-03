@@ -5,8 +5,8 @@ account: dsc116
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 3338922
-bundleId: 3935791
+bundleId: 3938220
 url: https://dsc116.shinyapps.io/economic-growth/
-when: 1606957902.08875
+when: 1607003973.74032
 asMultiple: FALSE
 asStatic: FALSE
