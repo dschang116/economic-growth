@@ -317,7 +317,7 @@ server <- function(input, output) {
       rename(wei = `1`) %>%
       ggplot(aes(x = wei, y = after_stat(count/sum(count)))) +
       geom_histogram(bins = 100) +
-      labs(title = "Posterior Predictive Distribution",
+      labs(title = "Posterior Probability Distribution of WEI",
            subtitle = paste("For week", input$week, "with",
                             input$deaths, "new deaths", "and",
                             input$claims, "weekly claims"),
