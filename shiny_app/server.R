@@ -25,7 +25,7 @@ server <- function(input, output) {
     measureCol <- case_when(
       measureSelected == "Real GDP Growth" ~ us_by_year$rgdp_cap_gr,
       measureSelected == "Real GDP per Capita" ~ us_by_year$rgdp_cap,
-      measureSelected == "Trade Balance" ~ us_by_year$trade_deficit,
+      measureSelected == "Trade Balance" ~ us_by_year$trade_balance,
       measureSelected == "Corporate Profits After Tax" ~ us_by_year$profits,
       measureSelected == "S&P 500 Index" ~ us_by_year$close,
       measureSelected == "Patents Granted" ~ us_by_year$tot_patents,
@@ -72,11 +72,13 @@ server <- function(input, output) {
         title = paste(
           "GDP Growth for",
           paste(countrySelected, collapse = ', '),
-          "in Twenty-First Century"
+          "in Recent Decades"
         )
       ) +
       scale_x_discrete(breaks = seq(1980, 2020, 5)) +
-      theme_bw()
+      theme_bw() +
+      theme(plot.title = 
+              element_text(size = 12, face = "bold", color = "darkgreen"))
   })
   
   ############## SECOND TAB ##############
@@ -89,7 +91,7 @@ server <- function(input, output) {
     x_var <- case_when(
       xSelected == "Real GDP Growth" ~ "rgdp_cap_gr",
       xSelected == "Real GDP per Capita" ~ "rgdp_cap",
-      xSelected == "Trade Balance" ~ "trade_deficit",
+      xSelected == "Trade Balance" ~ "trade_balance",
       xSelected == "Corporate Profits After Tax" ~ "profits",
       xSelected == "S&P 500 Index" ~ "close",
       xSelected == "Patents Granted" ~ "tot_patents",
@@ -99,7 +101,7 @@ server <- function(input, output) {
     y_var <- case_when(
       ySelected == "Real GDP Growth" ~ "rgdp_cap_gr",
       ySelected == "Real GDP per Capita" ~ "rgdp_cap",
-      ySelected == "Trade Balance" ~ "trade_deficit",
+      ySelected == "Trade Balance" ~ "trade_balance",
       ySelected == "Corporate Profits After Tax" ~ "profits",
       ySelected == "S&P 500 Index" ~ "close",
       ySelected == "Patents Granted" ~ "tot_patents",
@@ -136,17 +138,19 @@ server <- function(input, output) {
       geom_point() +
       geom_jitter() +
       geom_smooth(method = model_method,
-                  se = TRUE,
+                  level = 0.95,
                   formula = y ~ x) +
       labs(title = "U.S Economic and Policy Metrics",
            subtitle = "Summarized yearly from 1988-2018",
            x = paste(xSelected, x_lab_suffix),
-           y = paste(ySelected, y_lab_suffix)) +
+           y = paste(ySelected, y_lab_suffix),
+           caption = "Sources: FRED, IMAA, USPTO, Yahoo! Finance, Macrotrends") +
       theme_classic() +
       theme(plot.title = 
               element_text(size = 20, face = "bold", color = "darkgreen"),
             plot.subtitle = 
-              element_text(size = 15, face = "bold", color = "darkgreen"))
+              element_text(size = 15, face = "bold", color = "darkgreen"),
+            plot.caption = element_text(face = "italic"))
   })
   
   #######################################
@@ -157,43 +161,33 @@ server <- function(input, output) {
     ySelected <- input$y_var
     
     x_var <- case_when(
-      xSelected == "Real GDP Growth" ~ "rgdp_cap_gr",
-      xSelected == "Real GDP per Capita" ~ "rgdp_cap",
-      xSelected == "Trade Balance" ~ "trade_deficit",
-      xSelected == "Corporate Profits After Tax" ~ "profits",
-      xSelected == "S&P 500 Index" ~ "close",
-      xSelected == "Patents Granted" ~ "tot_patents",
-      xSelected == "Mergers and Acquistions" ~ "value_m_a"
+      xSelected == "Real GDP Growth" ~ us_by_year$rgdp_cap_gr,
+      xSelected == "Real GDP per Capita" ~ us_by_year$rgdp_cap,
+      xSelected == "Trade Balance" ~ us_by_year$trade_balance,
+      xSelected == "Corporate Profits After Tax" ~ us_by_year$profits,
+      xSelected == "S&P 500 Index" ~ us_by_year$close,
+      xSelected == "Patents Granted" ~ us_by_year$tot_patents,
+      xSelected == "Mergers and Acquistions" ~ us_by_year$value_m_a
     )
     
     y_var <- case_when(
-      ySelected == "Real GDP Growth" ~ "rgdp_cap_gr",
-      ySelected == "Real GDP per Capita" ~ "rgdp_cap",
-      ySelected == "Trade Balance" ~ "trade_deficit",
-      ySelected == "Corporate Profits After Tax" ~ "profits",
-      ySelected == "S&P 500 Index" ~ "close",
-      ySelected == "Patents Granted" ~ "tot_patents",
-      ySelected == "Mergers and Acquistions" ~ "value_m_a"
+      ySelected == "Real GDP Growth" ~ us_by_year$rgdp_cap_gr,
+      ySelected == "Real GDP per Capita" ~ us_by_year$rgdp_cap,
+      ySelected == "Trade Balance" ~ us_by_year$trade_balance,
+      ySelected == "Corporate Profits After Tax" ~ us_by_year$profits,
+      ySelected == "S&P 500 Index" ~ us_by_year$close,
+      ySelected == "Patents Granted" ~ us_by_year$tot_patents,
+      ySelected == "Mergers and Acquistions" ~ us_by_year$value_m_a
     )
     
     if (methodSelected == "Linear Model")
-      lmsum <-
-      reactive({
-        lm(reformulate(x_var, y_var),
-           data = us_by_year,
-           method = "lm")
-      })
+      fit_model <- lm(y_var ~ x_var, us_by_year)
     
     if (methodSelected == "Loess Model")
-      lmsum <-
-      reactive({
-        lm(reformulate(x_var, y_var),
-           data = us_by_year,
-           method = "loess")
-      })
+      fit_model <- loess(y_var ~ x_var, us_by_year)
     
     # Print a summary of the model.
-    print(summary(lmsum()))
+    print(summary(fit_model))
   })
   
   ############## THIRD TAB ##############
@@ -317,13 +311,26 @@ server <- function(input, output) {
     
     posterior_predict(fit_1, newdata = new_obs) %>%
       as_tibble() %>% 
+      mutate_all(as.numeric) %>%
       rename(wei = `1`) %>% 
       ggplot(aes(x = wei, y = after_stat(count/sum(count)))) +
-      geom_histogram(bins = 100, alpha = 0.5) +
-      theme_classic()
-    
+      geom_histogram(bins = 100) +
+      labs(title = "Posterior Predictive Distribution",
+            subtitle = paste("For week", weekSelected,
+                             "new deaths", deathsSelected, 
+                             "weekly claims", claimsSelected),
+            x = "Weekly Economic Index (WEI)",
+            y = "Probability") + 
+      scale_x_continuous(labels = scales::number_format()) +
+      scale_y_continuous(labels = scales::percent_format()) +
+      theme_classic() +
+      theme(plot.title = 
+              element_text(size = 20, face = "bold", color = "darkgreen"),
+            plot.subtitle = 
+              element_text(size = 15, face = "bold", color = "darkgreen"))
   })
   
+  #######################################
 }
 
 

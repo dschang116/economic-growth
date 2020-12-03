@@ -2,8 +2,6 @@ library(tidyverse)
 library(readxl)
 library(ggplot2)
 library(lubridate)
-library(rstanarm)
-library(tidymodels)
 
 ##########################################################
 
@@ -81,11 +79,11 @@ m_a <- read_excel("raw_data/m-a.xlsx") %>%
 
 # Read in trade balance data
 
-trade_balance <- read_excel("raw_data/trade-balance.xlsx") %>%
+trade <- read_excel("raw_data/trade-balance.xlsx") %>%
   mutate(month = month(date),
          obs_date = year(date)) %>%
-  rename(trade_deficit = 2) %>%
-  select(obs_date, trade_deficit) %>%
+  rename(trade_balance = 2) %>%
+  select(obs_date, trade_balance) %>%
   slice(19:49)
 
 # Perform join
@@ -96,7 +94,7 @@ us_by_year <- us_rgdp_cap %>%
   inner_join(sp500, by = "obs_date") %>%
   inner_join(patents_granted, by = "obs_date") %>%
   inner_join(m_a, by = "obs_date") %>%
-  inner_join(trade_balance, by = "obs_date") %>%
+  inner_join(trade, by = "obs_date") %>%
   mutate(
     rgdp_cap = as.numeric(rgdp_cap),
     rgdp_cap_gr = as.numeric(rgdp_cap_gr),
@@ -192,7 +190,7 @@ us_states <- read_csv(
 # Read in state population data.
 
 state_pop <- read_csv(
-  "raw_data/state_pop.csv",
+  "raw_data/state-pop.csv",
   col_types = cols(
     .default = col_double(),
     SUMLEV = col_character(),
@@ -283,35 +281,11 @@ initial_claims <- read_excel("raw_data/initial-claims-weekly.xls", skip = 52) %>
          week = 1:38) %>% 
   select(week, claims)
 
-# Read in positivity rate data
-
-pos_rate_weekly <- read_csv("raw_data/national-activity-indicators.csv", col_types = cols(
-  X1 = col_character(),
-  X2 = col_character(),
-  X3 = col_character(),
-  X4 = col_character(),
-  X5 = col_character(),
-  X6 = col_character(),
-  X7 = col_logical(),
-  X8 = col_logical(),
-  X9 = col_logical(),
-  X10 = col_logical()
-), skip = 6) %>% 
-  mutate(pos_rate = `% of Specimens Positive for SARS-CoV-2`,
-         week = 1:38) %>% 
-  select(week, pos_rate)
-
 # Perform join to create tibble weekly
 
 weekly <- inner_join(wei, weekly_trends, by = "week") %>% 
-  inner_join(initial_claims, by = "week") %>% 
-  inner_join(pos_rate_weekly, by = "week")
+  inner_join(initial_claims, by = "week")
 
 # Save the resulting data
 
 saveRDS(weekly, "weekly.RDS")
-
-
-
-
-
