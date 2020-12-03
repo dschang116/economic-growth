@@ -21,7 +21,7 @@ us_rgdp_cap_growth <- read_excel("raw_data/rgdp-cap-growth.xls", skip = 10) %>%
   mutate(obs_date = 1948:2020) %>%
   slice(41:71)
 
-# Read in purchasing power parity converted GDP per capita for the U.S.
+# Read in corporate profits
 
 corp_profits <- read_excel("raw_data/corp-profits.xls", skip = 10) %>%
   rename(obs_date = "observation_date",
@@ -31,16 +31,14 @@ corp_profits <- read_excel("raw_data/corp-profits.xls", skip = 10) %>%
 
 # Read in S&P 500 Index historical data
 
-sp500 <- read_csv(
-  "raw_data/sp500.csv",
-  col_types = cols(
-    Date = col_date(format = ""),
-    Open = col_double(),
-    High = col_double(),
-    Low = col_double(),
-    Close = col_double(),
-    `Adj Close` = col_double(),
-    Volume = col_double()
+sp500 <- read_csv("raw_data/sp500.csv", col_types = cols(
+  Date = col_date(format = ""),
+  Open = col_double(),
+  High = col_double(),
+  Low = col_double(),
+  Close = col_double(),
+  `Adj Close` = col_double(),
+  Volume = col_double()
   )) %>%
   mutate(month = month(Date),
          obs_date = year(Date),
@@ -110,9 +108,9 @@ saveRDS(us_by_year, "us_by_year.RDS")
 
 # Read in IMF real GDP data.
 
-# Rename first column to country.
-# Drop no data and NA values.
-# Rename China.
+# Rename first column to country
+# Drop no data and NA values
+# Rename China
 
 imf_rgdp <- read_excel("raw_data/imf-rgdp.xls") %>%
   rename(country = "Real GDP growth (Annual percent change)") %>%
@@ -121,8 +119,8 @@ imf_rgdp <- read_excel("raw_data/imf-rgdp.xls") %>%
   mutate(country = replace(country, country == "China, People's Republic of", 
                            "China"))
 
+# Ten largest economies
 
-# Ten biggest economy countries.
 countries <- c(
   "Brazil",
   "Canada",
@@ -136,7 +134,7 @@ countries <- c(
   "United States"
 )
 
-# Filter based on ten biggest economy countries.
+# Filter based on ten largest economies
 # Change first column country as factor type and rest as numeric column type.
 
 ten_econ <- imf_rgdp %>%
@@ -150,6 +148,7 @@ ten_econ <- imf_rgdp %>%
 saveRDS(ten_econ, "ten_econ.RDS")
 
 ##########################################################
+
 # Read in state first time unemployment claims data.
 # Total initial claims for 44 weeks of 2020 for each state
 # From week of 1/4/2020 to 10/31/2020
@@ -173,14 +172,12 @@ state_unemployment_rate <-
   select(state, unemp_rate) %>%
   mutate(state = tolower(state))
 
-# Read in U.S. States and if governor is democratic
+# Read in U.S. state population and if governor is Democratic
 
-us_states <- read_csv(
-  "raw_data/us-state-govs.csv",
-  col_types = cols(
-    StateName = col_character(),
-    StateAbbr = col_character(),
-    DemGov = col_number()
+us_states <- read_csv("raw_data/us-state-govs.csv", col_types = cols(
+  StateName = col_character(),
+  StateAbbr = col_character(),
+  DemGov = col_number()
   )
 ) %>%
   rename(state = "StateName") %>%
@@ -207,18 +204,16 @@ state_pop <- read_csv(
   filter(!state %in% c("District of Columbia", "Puerto Rico")) %>%
   mutate(state = tolower(state))
 
-# Read in states COVID-19 data.
-
+# Read in states COVID-19 data
 # Data are collected from 3/6/2020 to 11/11/2020 and accumulative
 
-state_covid <- read_csv(
-  "raw_data/states-covid.csv",
-  col_types = cols(
-    .default = col_double(),
-    date = col_date(format = ""),
-    state = col_character(),
-    dataQualityGrade = col_character()
-  )) %>%
+state_covid <- read_csv("raw_data/states-covid.csv", col_types = cols(
+  .default = col_double(),
+  date = col_date(format = ""),
+  state = col_character(),
+  dataQualityGrade = col_character()
+  )
+) %>%
   filter(date == as.Date("2020-11-11")) %>%
   select(state, death, positive, totalTestResults) %>%
   rename(StateAbbr = state,
@@ -287,5 +282,3 @@ weekly <- inner_join(wei, weekly_trends, by = "week") %>%
   inner_join(initial_claims, by = "week")
 
 # Save the resulting data
-
-saveRDS(weekly, "weekly.RDS")

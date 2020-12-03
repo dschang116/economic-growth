@@ -60,25 +60,25 @@ server <- function(input, output) {
     countrySelected <- input$country
     
     ten_econ %>% filter(country %in% countrySelected) %>%
-    pivot_longer(cols = -country,
-                 names_to = "year",
-                 values_to = "gdp") %>%
-    ggplot(aes(x = year, y = gdp, group = country, color = country)) +
-      geom_line() +
-      labs (
-        x = "Year",
-        y = "GDP Growth (%)",
-        color = "Country",
-        title = paste(
-          "GDP Growth for",
-          paste(countrySelected, collapse = ', '),
-          "in Recent Decades"
-        )
-      ) +
-      scale_x_discrete(breaks = seq(1980, 2020, 5)) +
-      theme_bw() +
-      theme(plot.title = 
-              element_text(size = 12, face = "bold", color = "darkgreen"))
+      pivot_longer(cols = -country,
+                   names_to = "year",
+                   values_to = "gdp") %>%
+      ggplot(aes(x = year, y = gdp, group = country, color = country)) +
+        geom_line() +
+        labs (
+          x = "Year",
+          y = "GDP Growth (%)",
+          color = "Country",
+          title = paste(
+            "GDP Growth for",
+            paste(countrySelected, collapse = ', '),
+            "in Recent Decades"
+          )
+        ) +
+        scale_x_discrete(breaks = seq(1980, 2020, 5)) +
+        theme_bw() +
+        theme(plot.title = 
+                element_text(size = 12, face = "bold", color = "darkgreen"))
   })
   
   ############## SECOND TAB ##############
@@ -258,14 +258,14 @@ server <- function(input, output) {
         select(
           "State" = state,
           "Total Initial Claims" = tot_claims,
-          "Unemp Rate %" = unemp_rate,
+          "Unemployment Rate (%)" = unemp_rate,
           "Total Positive" = tot_pos,
-          "Positive Rate %" = pos_rate,
-          "Test per 1000" = test_per_1000,
-          "Death per 1000" = death_per_1000
+          "Positivity Rate (%)" = pos_rate,
+          "Tests per 1000" = test_per_1000,
+          "Deaths per 1000" = death_per_1000
         ) %>%
         distinct() %>%
-        mutate(across(is.numeric, ~ round(., 2))),
+        mutate(across(where(is.numeric), ~ round(., 2))),
       rownames = FALSE,
       options = list(lengthChange = FALSE)
     ) %>%
@@ -280,14 +280,14 @@ server <- function(input, output) {
         select(
           "State" = state,
           "Total Initial Claims" = tot_claims,
-          "Unemp Rate %" = unemp_rate,
+          "Unemployment Rate (%)" = unemp_rate,
           "Total Positive" = tot_pos,
-          "Positive Rate %" = pos_rate,
-          "Test per 1000" = test_per_1000,
-          "Death per 1000" = death_per_1000
+          "Positivity Rate (%)" = pos_rate,
+          "Tests per 1000" = test_per_1000,
+          "Deaths per 1000" = death_per_1000
         ) %>%
         distinct() %>%
-        mutate(across(is.numeric, ~ round(., 2))),
+        mutate(across(where(is.numeric), ~ round(., 2))),
       rownames = FALSE,
       options = list(lengthChange = FALSE)
     ) %>%
@@ -296,31 +296,35 @@ server <- function(input, output) {
   
   ############## FOURTH TAB ##############
   
-  output$wei_posterior = renderPlot({
-    weekSelected <- input$week
-    deathsSelected <- input$deaths
-    claimsSelected <- input$claims
-    
+  pp <- reactive({
     fit_1 <- stan_glm(formula = index ~ week + new_deaths + claims,
                       data = weekly,
                       refresh = 0)
     
-    new_obs <- tibble(week = weekSelected,
-                      new_deaths = deathsSelected,
-                      claims = claimsSelected)
+    new_obs <- tibble(week = input$week,
+                      new_deaths = input$deaths,
+                      claims = input$claims)
     
-    posterior_predict(fit_1, newdata = new_obs) %>%
+    posterior_predict(fit_1, newdata = new_obs) 
+  })
+  
+  #######################################
+  
+  output$wei_posterior = renderPlot({
+    pp() %>% 
       as_tibble() %>% 
       mutate_all(as.numeric) %>%
-      rename(wei = `1`) %>% 
+      rename(wei = `1`) %>%
       ggplot(aes(x = wei, y = after_stat(count/sum(count)))) +
       geom_histogram(bins = 100) +
       labs(title = "Posterior Predictive Distribution",
-            subtitle = paste("For week", weekSelected,
-                             "new deaths", deathsSelected, 
-                             "weekly claims", claimsSelected),
-            x = "Weekly Economic Index (WEI)",
-            y = "Probability") + 
+           subtitle = paste("For week", input$week, "with",
+                            input$deaths, "new deaths", "and",
+                            input$claims, "weekly claims"),
+           x = "Weekly Economic Index (WEI)",
+           y = "Probability",
+           caption = "Sources: FRED, The COVID Tracking Project, The Federal Reserve Bank 
+           of New York") + 
       scale_x_continuous(labels = scales::number_format()) +
       scale_y_continuous(labels = scales::percent_format()) +
       theme_classic() +
@@ -330,22 +334,13 @@ server <- function(input, output) {
               element_text(size = 15, face = "bold", color = "darkgreen"))
   })
   
+  output$confidence_interval <- renderText({
+    pi <- posterior_interval(pp(), prob = 0.95)
+    
+    paste("[", format(round(pi[1,1], 4), nsmall = 4), ",",
+          format(round(pi[1,2], 4), nsmall = 4), "]")
+  })
+  
   #######################################
+  
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
