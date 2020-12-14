@@ -282,3 +282,4 @@ weekly <- inner_join(wei, weekly_trends, by = "week") %>%
   inner_join(initial_claims, by = "week")
 
 # Save the resulting data
+saveRDS(weekly, "weekly.RDS")
