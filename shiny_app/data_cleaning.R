@@ -271,7 +271,8 @@ weekly_trends <- read_excel("raw_data/covid-weekly-trends.xlsx") %>%
 
 # Read in initial claims data
 
-initial_claims <- read_excel("raw_data/initial-claims-weekly.xls", skip = 52) %>% 
+initial_claims <- read_excel("raw_data/initial-claims-weekly.xls", 
+                             skip = 52) %>% 
   mutate(claims = `217000`,
          week = 1:38) %>% 
   select(week, claims)
@@ -282,4 +283,5 @@ weekly <- inner_join(wei, weekly_trends, by = "week") %>%
   inner_join(initial_claims, by = "week")
 
 # Save the resulting data
+
 saveRDS(weekly, "weekly.RDS")

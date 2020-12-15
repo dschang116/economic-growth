@@ -51,7 +51,8 @@ server <- function(input, output) {
         scale_x_continuous(breaks = seq(from = 1990, to = 2018, by = 5))+
         scale_y_continuous(labels = scales::comma_format()) +
         theme_bw() +
-        theme(plot.title = element_text(size = 20, face = "bold", color = "darkgreen"))
+        theme(plot.title = element_text(size = 20, face = "bold", 
+                                        color = "darkgreen"))
   })
   
   #######################################
@@ -144,7 +145,8 @@ server <- function(input, output) {
            subtitle = "Summarized yearly from 1988-2018",
            x = paste(xSelected, x_lab_suffix),
            y = paste(ySelected, y_lab_suffix),
-           caption = "Sources: FRED, IMAA, USPTO, Yahoo! Finance, Macrotrends") +
+           caption = "Sources: FRED, IMAA, USPTO, 
+           Yahoo! Finance, Macrotrends") +
       theme_classic() +
       theme(plot.title = 
               element_text(size = 20, face = "bold", color = "darkgreen"),
@@ -247,7 +249,8 @@ server <- function(input, output) {
             axis.text.y = element_blank(),
             axis.ticks.y = element_blank(),
             legend.title = element_blank(),
-            plot.title = element_text(size = 20, face = "bold", color = "darkgreen"))
+            plot.title = element_text(size = 20, face = "bold", 
+                                      color = "darkgreen"))
   })
   
   #######################################
@@ -323,8 +326,8 @@ server <- function(input, output) {
                             input$claims, "weekly claims"),
            x = "Weekly Economic Index (WEI)",
            y = "Probability",
-           caption = "Sources: FRED, The COVID Tracking Project, The Federal Reserve Bank 
-           of New York") + 
+           caption = "Sources: FRED, The COVID Tracking Project, The Federal 
+           Reserve Bank of New York") + 
       scale_x_continuous(labels = scales::number_format()) +
       scale_y_continuous(labels = scales::percent_format()) +
       theme_classic() +
