@@ -13,12 +13,16 @@ r_state_metrics <- as_tibble(state_metrics) %>%
   filter(dem_gov == "0")%>%
   mutate(state = tools::toTitleCase(state))
 
-# Define server side logic 
+# Define server side logic.
 
 server <- function(input, output) {
   
   ############## FIRST TAB ##############
-
+  
+  # Generate plot of U.S. trends. 
+  # First select the measure, then Y-axis suffix is selected.
+  # Axis and title change based on measure selected. 
+  
   output$us_trend_plot = renderPlot({
     measureSelected <- input$measure
     
@@ -56,7 +60,10 @@ server <- function(input, output) {
   })
   
   #######################################
-    
+  
+  # Generate plot of the GDP of world's ten largest economies.
+  # Title adjusts for countries selected. 
+  
   output$ten_econ_plot = renderPlot({
     countrySelected <- input$country
     
@@ -83,6 +90,10 @@ server <- function(input, output) {
   })
   
   ############## SECOND TAB ##############
+  
+  # Generate regression plot based on user input of method, X-variable, and 
+  # Y-variable.
+  # Suffixes, title, and axes adjust based on user input.
   
   output$econ_regression_plot = renderPlot({
     methodSelected <- input$method
@@ -157,6 +168,8 @@ server <- function(input, output) {
   
   #######################################
   
+  # Render regression summary table based on user input.
+  
   output$econ_regression_summary <- renderPrint({
     methodSelected <- input$method
     xSelected <- input$x_var
@@ -193,6 +206,9 @@ server <- function(input, output) {
   })
   
   ############## THIRD TAB ##############
+  
+  # Generate plot of U.S. with metric selected.
+  # Use geom_polygon to color states based on governor party affiliation.
   
   output$covid_us_map = renderPlot({
     metricSelected <- input$metric
@@ -255,6 +271,8 @@ server <- function(input, output) {
   
   #######################################
   
+  # Render interactive table for states with a Democratic governor.
+  
   output$d_state_metrics_table <- renderDataTable({
     datatable(
       d_state_metrics %>%
@@ -276,6 +294,8 @@ server <- function(input, output) {
   })
   
   #######################################
+  
+  # Render interactive table for states with a Republican governor.
   
   output$r_state_metrics_table <- renderDataTable({
     datatable(
@@ -299,6 +319,8 @@ server <- function(input, output) {
   
   ############## FOURTH TAB ##############
   
+  # Use reactive to limit re-runs and improve efficiency. 
+  
   pp <- reactive({
     fit_1 <- stan_glm(formula = index ~ week + new_deaths + claims,
                       data = weekly,
@@ -312,6 +334,9 @@ server <- function(input, output) {
   })
   
   #######################################
+  
+  # Generate posterior distribution and confidence interval for WEI based on
+  # user input.
   
   output$wei_posterior = renderPlot({
     pp() %>% 

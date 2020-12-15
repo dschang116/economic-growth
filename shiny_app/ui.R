@@ -13,7 +13,7 @@ state_metrics <- readRDS("state_metrics.RDS")
 us_by_year <- readRDS("us_by_year.RDS")
 weekly <- readRDS("weekly.RDS")
 
-# Define economic measure list
+# Define economic measure list.
 
 measure <- list(
   "Real GDP Growth",
@@ -25,7 +25,7 @@ measure <- list(
   "Mergers and Acquistions"
   )
 
-# Define ten largest economies then order alphabetically
+# Define ten largest economies then order alphabetically.
 
 countries <- c(
   "Brazil",
@@ -41,13 +41,13 @@ countries <- c(
 ) %>%
   sort()
 
-# Define model methods
+# Define model methods.
 
 methods <- c(
   "Linear Model", 
   "Loess Model")
 
-# Define economic metrics
+# Define economic metrics.
 
 metrics <- c(
   "Weekly Initial Claims",
@@ -57,7 +57,7 @@ metrics <- c(
   "Tests Per Thousand",
   "Deaths Per Thousand")
 
-# Define UI for app
+# Define UI for app.
 
 shinyUI(
   navbarPage(
@@ -87,11 +87,11 @@ shinyUI(
       
       fluidPage(
         
-        # 2x2 column/row layout
+        # 2x2 column/row layout.
         
         fluidRow(
       
-          # Row 1 Column 1
+          # Row 1 Column 1.
           
           column(
             8,
@@ -109,7 +109,7 @@ shinyUI(
             mainPanel(plotOutput("us_trend_plot")))
           ),
         
-          # Row 1 Column 2
+          # Row 1 Column 2.
         
           column(
             4,
@@ -128,7 +128,7 @@ shinyUI(
         
         fluidRow(style = 'margin-top:3em',
                  
-          # Row 2 Column 1
+          # Row 2 Column 1.
                  
           column(
             4,
@@ -150,12 +150,12 @@ shinyUI(
               prosperity, and in turn, the world's.")
           ),
                  
-          # Row 2 Column 2
+          # Row 2 Column 2.
           
           column(
             8,
             
-            # Plot ten_econ_plot
+            # Plot ten_econ_plot.
             
             sidebarLayout(sidebarPanel(
              checkboxGroupInput(
@@ -213,7 +213,7 @@ shinyUI(
         sidebarPanel(
           h4("Construct the Model:"),
           
-          # Model X variable
+          # Model X variable.
           
           selectInput(
             "x_var",
@@ -223,7 +223,7 @@ shinyUI(
             selected = "Trade Balance"
           ),
           
-          # Model Y variable
+          # Model Y variable.
           
           selectInput(
             "y_var",
@@ -232,7 +232,7 @@ shinyUI(
             selected = "Real GDP per Capita"
           ),
           
-          # Model method
+          # Model method.
           radioButtons(
             "method",
             ("Method:"),
@@ -273,7 +273,7 @@ shinyUI(
       fluidPage(fluidRow(column(
         12,
         
-        # Sidebar
+        # Sidebar.
         sidebarLayout(
           sidebarPanel(
             radioButtons(
@@ -288,7 +288,7 @@ shinyUI(
             width = 3
           ),
           
-          # Show a plot of the generated distribution
+          # Show a plot of the generated distribution.
           mainPanel(plotOutput("covid_us_map"), width = 9)
         )
       )),
@@ -305,7 +305,7 @@ shinyUI(
           6,
           h3("States with Repulican Governors"),
           
-          # Plot data table
+          # Plot data table.
           dataTableOutput("r_state_metrics_table")
         )
       ))
@@ -340,7 +340,7 @@ shinyUI(
       
       br(),
         
-      # Sidebar
+      # Sidebar.
       sidebarLayout(
         sidebarPanel(
           sliderInput("week", "Weeks since March 1",
@@ -351,7 +351,7 @@ shinyUI(
                       min = 200000, max = 6000000, value = 778000)
         ),
         
-        # Show a plot of the generated distribution
+        # Show a plot of the generated distribution.
         mainPanel(plotOutput("wei_posterior"),
                   fluidPage(
                     withMathJax(),
